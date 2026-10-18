@@ -204,6 +204,8 @@ table.land th{color:var(--text);font-weight:700}
 .chip.ai{color:#e6d9ff;background:rgba(120,70,255,.45);border-color:#a98bff}
 .obj.ai .bar i{background:linear-gradient(90deg,#7a5cff,#c9a6ff)}
 .mapacc{font-size:11px;color:#c9a6ff;text-align:center;margin-top:5px}
+#invert{position:absolute;left:110px;bottom:18px;pointer-events:auto;font-size:12px;padding:7px 11px;border-radius:9px;border:1px solid var(--line);background:rgba(0,0,0,.45);color:var(--text)}
+body.touch #invert{left:auto;right:max(12px,env(safe-area-inset-right));bottom:auto;top:270px}
 #mute{position:absolute;left:18px;bottom:18px;pointer-events:auto;font-size:12px;padding:7px 11px;border-radius:9px;border:1px solid var(--line);background:rgba(0,0,0,.45);color:var(--text)}
 #mk-ai{color:#5dff8a}
 .fx.big{font-size:30px}
@@ -315,6 +317,24 @@ h1.title{background:linear-gradient(180deg,#fff,#ffc2cc 55%,#ff4f6e);-webkit-bac
 .fstep{font-size:14px;padding:7px 0;border-top:1px solid rgba(255,255,255,.06)}
 .fstep span{color:var(--gold);margin-left:6px} .fstep small{display:block;color:var(--dim);font-size:12.5px}
 #chips{top:132px} #radio{top:176px} body.touch #chips{top:118px} body.touch #radio{top:160px}
+.asm{min-height:44px;margin:10px 0;padding:10px 12px;border-radius:10px;background:rgba(0,0,0,.35);font-size:24px;letter-spacing:.08em;word-break:break-all}
+.frags{display:flex;gap:10px;flex-wrap:wrap}
+.frag-b{font-size:22px;letter-spacing:.06em;padding:10px 14px;border-radius:10px;background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.15);color:#fff}
+.frag-b.right{opacity:.35;border-color:var(--good)} .frag-b.wrong{border-color:var(--bad);animation:shake .3s}
+.dbrow{display:grid;grid-template-columns:190px 1fr 56px;gap:10px;align-items:center;padding:8px 0;border-top:1px solid rgba(255,255,255,.06);font-size:13px}
+.dbrow b small{display:block;font-weight:400;color:var(--dim);font-size:11px}
+.dbrow .seq{font-size:15px;letter-spacing:.12em;word-break:break-all}
+.dbrow i{font-style:normal;font-weight:700;color:var(--gold);text-align:right;font-size:16px}
+.dbrow.head{border-top:0}
+.scan{padding:14px 0}
+.keylock{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:10px}
+.keylock div{padding:10px 12px;border-radius:10px;background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.08);font-size:13px}
+.keylock b{display:block;margin-bottom:2px}
+table.rec td{font-size:13.5px;padding:9px 6px;cursor:pointer}
+table.rec tr.gone td{text-decoration:line-through;color:#5a6a70;background:rgba(255,79,94,.08)}
+table.rec tr.nope td{background:rgba(255,181,71,.12)}
+#mutcv,#gwcv,#lockcv,#trialcv{width:100%;display:block;border-radius:10px;background:rgba(0,0,0,.25);margin-bottom:8px}
+@media (max-width:900px){.dbrow{grid-template-columns:130px 1fr 48px}}
 .endvote{margin-top:6px;padding:10px 12px;border-radius:10px;background:rgba(255,214,107,.08);border:1px solid rgba(255,214,107,.3);font-size:14px}
 </style>
 <script type="importmap">
@@ -350,16 +370,16 @@ h1.title{background:linear-gradient(180deg,#fff,#ffc2cc 55%,#ff4f6e);-webkit-bac
       </div>
     </div>
   </div>
-  <div class="credit-line">3D 모델: Sketchfab — FrenchBaguette (CLN-R), Teliri (Coronavirus), vikrama1998 (Monocyte), a_wilczek, vertexmonster · 음악: ElevenLabs</div>
+  <div class="credit-line">3D 모델: Sketchfab — FrenchBaguette (CLN-R, 다리 분리·애니메이션), Teliri (Coronavirus), vikrama1998 (Monocyte), a_wilczek, vertexmonster · 음악: ElevenLabs</div>
 </div>
 
 <div id="hud" class="hidden">
   <div id="mission" class="panel">
     <div class="era" id="m-title">작전 1 · 유전체 수집</div>
-    <div class="ago">PATIENT “하나” · 서기 2187년</div>
+    <div class="ago" id="m-sub">PATIENT “하나” · 서기 2187년</div>
     <div class="obj" id="o-a"><div class="lab"><span id="l-a">감염 세포 유전체 샘플</span> <b id="v-a">0 / 5</b></div><div class="bar"><i></i></div></div>
-    <div class="obj" id="o-b"><div class="lab">바이러스 유전체 조각 <b id="v-b">0 / 40</b></div><div class="bar"><i></i></div></div>
-    <div class="obj"><div class="lab">모은 빅데이터 <b id="v-rows">0</b></div></div>
+    <div class="obj" id="o-b"><div class="lab"><span id="l-b">바이러스 처치</span> <b id="v-b">0 / 25</b></div><div class="bar"><i></i></div></div>
+    <div class="obj"><div class="lab">모은 빅데이터 <b id="v-rows" style="text-align:right;font-size:12px;line-height:1.4">0</b></div></div>
     <div class="obj ai" id="o-acc"><div class="lab">AI 예측 정확도 <b id="v-acc">0%</b></div><div class="bar"><i></i></div></div>
     <div class="obj hidden" id="o-home"><div class="lab"><b style="color:var(--good)">▶ 초록 주입 포트로 귀환!</b></div></div>
   </div>
@@ -370,14 +390,10 @@ h1.title{background:linear-gradient(180deg,#fff,#ffc2cc 55%,#ff4f6e);-webkit-bac
     <div class="srow2 thin"><span>기력</span><div class="sbar st"><i id="st-i"></i></div></div>
   </div>
   <button id="mute">소리 켜짐</button>
+  <button id="invert">시점 반전 끔</button>
   <div id="sensors" class="panel">
     <div class="sh"><span>몸속 센서 · 0.5초마다 기록</span></div>
-    <div class="srow"><span class="k">위치</span><span class="v" id="sv-reg" style="font-size:12.5px">-</span></div>
-    <div class="srow"><span class="k">혈류 속도</span><span class="v"><span id="sv-flow">0</span><small>cm/s</small></span></div>
-    <div class="srow"><span class="k">산소 포화도</span><span class="v"><span id="sv-o2">0</span><small>%</small></span></div>
-    <div class="srow" id="sr-temp"><span class="k">체온</span><span class="v"><span id="sv-temp">37.0</span><small>℃</small></span></div>
-    <div class="srow" id="sr-vir"><span class="k">바이러스 농도</span><span class="v"><span id="sv-vir">0</span><small>/mL</small></span></div>
-    <div class="srow"><span class="k">면역 반응</span><span class="v" id="sv-imm">-</span></div>
+    <div id="srows"></div>
   </div>
   <div id="mapbox" class="panel">
     <div id="maptitle"><span>AI 지도 · <b>바이러스 예측</b></span></div>
@@ -426,13 +442,13 @@ h1.title{background:linear-gradient(180deg,#fff,#ffc2cc 55%,#ff4f6e);-webkit-bac
         <ul>
           <li><span class="tag now">1차시</span><b>과학 실험</b> · 부표 관측 데이터로 고생대 바다 분석</li>
           <li><span class="tag now">1차시</span><b>기상 관측</b> · 대기 산소·CO₂ 데이터로 대멸종 예측</li>
-          <li><span class="tag now">오늘</span><b>유전체 분석</b> · 바이러스 유전체에서 변하지 않는 표적을 찾고, 사람 유전형으로 <b>중증 위험(질병 발생 가능성)을 예측</b></li>
-          <li><span class="tag now">오늘</span><b>신약 개발</b> · AI가 후보 물질 100만 개를 걸러 <b>치료제를 빠르게</b> 찾음</li>
+          <li><span class="tag now">오늘</span><b>유전체 분석</b> · 유전체를 조립해 데이터베이스와 비교 → 바이러스의 <b>정체와 원인</b>(박쥐 바이러스의 스파이크 변이)을 찾고, 환자 1만 명을 비교해 <b>하나의 질병 위험을 예측</b></li>
+          <li><span class="tag now">오늘</span><b>신약 개발</b> · 3D 구조로 표적을 정하고, AI 가상 실험으로 100만 개를 걸러, 임상 시험 데이터(위약 비교)로 <b>치료제를 빠르게</b> 결정</li>
         </ul>
       </div>
       <div class="card">
         <h3>왜 “빅”데이터여야 했을까?</h3>
-        <p>유전체 1개는 약 30,000개의 염기예요. 유전체가 몇 개뿐이면 어디가 변하지 않는 구역인지 알 수 없지만, <b>수백 개를 겹쳐 보자 보존 구역이 또렷하게</b> 드러났어요. 진료 기록도 수천 건이 쌓여야 유전형별 위험 차이를 믿을 수 있어요.</p>
+        <p>바이러스 유전체 하나는 약 30,000글자인데, 기계로 읽으면 <b>짧은 조각 수십만 개</b>로 나와요. 이것을 이어 붙이고 수백만 개의 바이러스와 비교하는 일, 환자 <b>1만 명</b>의 유전체를 비교해 위험한 유전자를 찾는 일, 화합물 <b>100만 개</b>를 가상으로 실험하는 일은 모두 사람이 손으로는 할 수 없어요. 데이터가 많아야 우연이 아닌 진짜 차이를 찾을 수 있어요.</p>
       </div>
       <div class="card">
         <h3>빅데이터의 문제점</h3>
@@ -456,7 +472,7 @@ h1.title{background:linear-gradient(180deg,#fff,#ffc2cc 55%,#ff4f6e);-webkit-bac
 <div id="touchui" class="hidden">
   <div id="joy"><i></i></div>
   <div id="joyhint">왼쪽: 이동 (끝까지 밀면 자동 가속)</div>
-  <div id="lookhint">← 오른쪽 화면을 끌어서 시점 돌리기 →</div>
+  <div id="lookhint">오른쪽: 끌면 시점 · <b style="color:#9ff6ff">톡 치면 레이저</b></div>
   <button class="tbtn" id="tb-roll">위장막</button>
   <button class="tbtn" id="tb-dash">돌진</button>
   <button id="tb-teacher" class="hidden">교사용 · 미션 완료</button>
