@@ -1,0 +1,468 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="theme-color" content="#03080d">
+<title>BIG DATA · FUTURE — 바이러스 X</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Black+Han+Sans&family=Noto+Sans+KR:wght@400;500;700;900&family=JetBrains+Mono:wght@500;700&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg:#03080d; --panel:rgba(6,18,28,.62); --line:rgba(120,230,255,.22);
+  --cyan:#5ff2ff; --cyan2:#1fb8d6; --text:#e8f6fb; --dim:#8fb3c2;
+  --warn:#ffb547; --bad:#ff4f5e; --good:#5dffa8; --gold:#ffd66b;
+}
+*{box-sizing:border-box}
+html,body{margin:0;height:100%;overflow:hidden;background:var(--bg);color:var(--text);font-family:'Noto Sans KR',system-ui,sans-serif;-webkit-user-select:none;user-select:none;-webkit-touch-callout:none;-webkit-tap-highlight-color:transparent;overscroll-behavior:none}
+input,select{-webkit-user-select:auto;user-select:auto}
+canvas#c,#hud,#touchui,#dialog{touch-action:none}
+canvas#c{position:fixed;inset:0;width:100%;height:100%;display:block;cursor:grab}
+.hidden{display:none!important}
+.panel{background:var(--panel);border:1px solid var(--line);border-radius:14px;backdrop-filter:blur(10px);-webkit-backdrop-filter:blur(10px);box-shadow:0 10px 40px rgba(0,0,0,.35)}
+button{font-family:inherit;cursor:pointer}
+.btn{background:linear-gradient(180deg,#2ad4f0,#1490b8);color:#00141c;border:0;border-radius:12px;padding:14px 26px;font-weight:900;font-size:18px;letter-spacing:.02em;box-shadow:0 0 0 1px rgba(255,255,255,.25) inset,0 8px 30px rgba(31,184,214,.35);transition:transform .12s,filter .12s}
+.btn:hover{transform:translateY(-2px);filter:brightness(1.1)}
+.btn.ghost{background:transparent;color:var(--cyan);box-shadow:0 0 0 1px var(--line) inset}
+.mono{font-family:'JetBrains Mono',monospace}
+
+/* ---------- 로딩 / 타이틀 ---------- */
+#screen{position:fixed;inset:0;display:grid;place-items:center;z-index:50;
+  background:radial-gradient(ellipse at 50% 30%,rgba(31,184,214,.22),transparent 60%),radial-gradient(ellipse at 50% 120%,rgba(95,242,255,.12),transparent 50%),#02070b}
+#screen .wrap{width:min(880px,92vw);text-align:center}
+.kicker{font-family:'JetBrains Mono',monospace;color:var(--cyan);letter-spacing:.35em;font-size:13px;opacity:.85}
+h1.title{font-family:'Black Han Sans',sans-serif;font-weight:400;font-size:clamp(46px,8vw,96px);line-height:1;margin:14px 0 6px;
+  background:linear-gradient(180deg,#fff,#9eeeff 55%,#2ab7d8);-webkit-background-clip:text;background-clip:text;color:transparent;filter:drop-shadow(0 0 30px rgba(95,242,255,.35))}
+.subtitle{color:var(--dim);font-size:clamp(15px,2vw,19px);margin-bottom:28px}
+.subtitle b{color:var(--text)}
+#loadbar{height:6px;background:rgba(255,255,255,.08);border-radius:6px;overflow:hidden;margin:24px auto 8px;width:min(420px,80vw)}
+#loadbar i{display:block;height:100%;width:0;background:linear-gradient(90deg,var(--cyan2),var(--cyan));transition:width .2s}
+#loadtxt{font-size:13px;color:var(--dim)}
+#startbox{display:flex;flex-direction:column;gap:18px;align-items:center}
+.namerow{display:flex;gap:10px;align-items:center;flex-wrap:wrap;justify-content:center}
+.namerow input{background:rgba(255,255,255,.06);border:1px solid var(--line);color:var(--text);border-radius:12px;padding:13px 16px;font-size:17px;width:240px;font-family:inherit;outline:none}
+.namerow input:focus{border-color:var(--cyan)}
+.controls{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;width:100%;margin-top:6px}
+.controls div{padding:12px 10px;font-size:13px;color:var(--dim);line-height:1.5}
+.controls b{display:block;color:var(--text);font-size:15px;margin-bottom:2px}
+.linkrow{display:flex;gap:10px}
+@media (max-width:640px){.controls{grid-template-columns:repeat(2,1fr)}}
+
+/* ---------- HUD ---------- */
+#hud{position:fixed;inset:0;pointer-events:none;z-index:10;transition:opacity .3s}
+#hud.dim{opacity:.18}
+#mission{position:absolute;left:18px;top:18px;width:300px;padding:14px 16px}
+#mission .era{font-family:'Black Han Sans';font-size:22px;color:#fff}
+#mission .ago{font-size:12px;color:var(--cyan);font-family:'JetBrains Mono';letter-spacing:.06em;margin-bottom:10px}
+.obj{margin:9px 0}
+.obj .lab{display:flex;justify-content:space-between;font-size:13px;color:var(--dim)}
+.obj .lab b{color:var(--text);font-weight:700}
+.obj.done .lab b{color:var(--good)}
+.bar{height:7px;background:rgba(255,255,255,.08);border-radius:6px;overflow:hidden;margin-top:4px}
+.bar i{display:block;height:100%;width:0;background:linear-gradient(90deg,var(--cyan2),var(--cyan));transition:width .25s}
+#log{position:absolute;left:18px;top:250px;width:300px;padding:10px 12px;font-family:'JetBrains Mono';font-size:10.5px;color:#7fe9c6;line-height:1.55;white-space:pre;overflow:hidden;height:118px}
+#log .h{color:var(--dim)}
+#sensors{position:absolute;right:18px;top:18px;width:262px;padding:12px 14px}
+.sh{font-size:12px;color:var(--cyan);font-family:'JetBrains Mono';letter-spacing:.12em;margin-bottom:6px;display:flex;justify-content:space-between}
+.srow{display:grid;grid-template-columns:86px 1fr;align-items:center;gap:8px;padding:5px 0;border-top:1px solid rgba(255,255,255,.05)}
+.srow .k{font-size:12.5px;color:var(--dim)}
+.srow .v{font-family:'JetBrains Mono';font-size:15px;text-align:right;font-weight:700}
+.srow .v small{font-size:10px;color:var(--dim);font-weight:500;margin-left:3px}
+.srow.warn .v{color:var(--warn)} .srow.bad .v{color:var(--bad);animation:blink .6s infinite}
+@keyframes blink{50%{opacity:.35}}
+#bars{position:absolute;left:18px;bottom:18px;width:330px;padding:12px 14px}
+#bars .row{display:grid;grid-template-columns:52px 1fr 44px;gap:8px;align-items:center;font-size:12.5px;margin:4px 0}
+#bars .row span:last-child{text-align:right;font-family:'JetBrains Mono'}
+#hpbar i{background:linear-gradient(90deg,#ff5b6b,#ff9a6b)}
+#stbar i{background:linear-gradient(90deg,#ffd66b,#fff2b8)}
+#lvl{font-size:12px;color:var(--dim);margin-top:4px}
+#lvl b{color:var(--gold)}
+#mapbox{position:absolute;right:18px;bottom:18px;padding:10px;width:222px}
+#minimap{width:200px;height:200px;border-radius:10px;display:block;background:#021018}
+#mapleg{display:flex;justify-content:space-between;align-items:center;font-size:11px;color:var(--dim);margin-top:7px}
+#mapleg .ramp{flex:1;height:6px;margin:0 6px;border-radius:4px;background:linear-gradient(90deg,#2b4cff,#19d3c5,#9bff5c,#ffd23f,#ff4b4b)}
+#maptitle{font-size:11.5px;color:var(--text);margin-bottom:6px;display:flex;justify-content:space-between}
+#maptitle kbd{font-family:'JetBrains Mono';font-size:10px;border:1px solid var(--line);border-radius:4px;padding:0 4px;color:var(--cyan)}
+#chips{position:absolute;top:18px;left:50%;transform:translateX(-50%);display:flex;gap:8px}
+.chip{padding:6px 12px;border-radius:30px;font-size:13px;font-weight:700;background:rgba(0,0,0,.45);border:1px solid var(--line)}
+.chip.red{color:#fff;background:rgba(255,60,80,.6);border-color:#ff7b88;animation:blink .7s infinite}
+.chip.green{color:#c8ffe2;border-color:rgba(93,255,168,.5)}
+.chip.gold{color:#fff3c4;border-color:rgba(255,214,107,.6)}
+#radio{position:absolute;top:64px;left:50%;transform:translateX(-50%);width:min(560px,60vw);padding:11px 14px 11px 60px;font-size:14.5px;line-height:1.55;opacity:0;transition:opacity .35s, transform .35s}
+#radio.show{opacity:1;transform:translateX(-50%) translateY(4px)}
+#radio .orb{position:absolute;left:14px;top:12px;width:34px;height:34px}
+#radio .who{font-size:11px;color:var(--cyan);font-family:'JetBrains Mono';letter-spacing:.15em}
+#toast{position:absolute;bottom:120px;left:50%;transform:translateX(-50%);padding:10px 18px;font-weight:700;font-size:16px;opacity:0;transition:opacity .3s;white-space:nowrap}
+#toast.show{opacity:1}
+#vignette{position:absolute;inset:0;box-shadow:inset 0 0 160px 40px rgba(255,30,50,0);transition:box-shadow .25s}
+#banner{position:absolute;left:0;right:0;top:34%;text-align:center;opacity:0;transition:opacity 1s}
+#banner.show{opacity:1}
+#banner .a{font-family:'JetBrains Mono';letter-spacing:.4em;color:var(--cyan);font-size:14px}
+#banner .b{font-family:'Black Han Sans';font-size:clamp(44px,7vw,84px);text-shadow:0 0 40px rgba(0,0,0,.6)}
+#banner .c{font-size:18px;color:#cdeaf3}
+.marker{position:absolute;transform:translate(-50%,-50%);text-align:center;font-size:12px;font-weight:700;text-shadow:0 1px 4px #000}
+.marker .dot{width:16px;height:16px;margin:0 auto 3px;border-radius:50%;border:2px solid currentColor;box-shadow:0 0 12px currentColor}
+#mk-probe{color:var(--cyan)} #mk-home{color:var(--gold)}
+.fx{position:absolute;font-weight:900;font-size:18px;color:var(--good);text-shadow:0 2px 6px #000;pointer-events:none;transition:transform .9s ease-out,opacity .9s;white-space:nowrap}
+
+/* ---------- 대화창 ---------- */
+#dialog{position:fixed;left:50%;bottom:34px;transform:translateX(-50%);width:min(860px,92vw);padding:20px 24px 18px 104px;z-index:30;cursor:pointer;min-height:118px}
+#dialog .orb{position:absolute;left:22px;top:22px;width:62px;height:62px}
+#dialog.me .orb{display:none} #dialog.me{padding-left:24px}
+#dialog.sys .orb{display:none} #dialog.sys{padding-left:24px;border-color:rgba(255,80,90,.45)}
+#dlg-who{font-size:13px;font-weight:900;letter-spacing:.12em;color:var(--cyan);margin-bottom:6px;font-family:'JetBrains Mono'}
+#dialog.me #dlg-who{color:var(--gold)} #dialog.sys #dlg-who{color:#ff7b88}
+#dlg-text{font-size:clamp(16px,1.6vw,20px);line-height:1.65;white-space:pre-line}
+#dialog.sys #dlg-text{font-family:'JetBrains Mono';color:#ffd0d4}
+#dlg-next{position:absolute;right:18px;bottom:12px;font-size:12px;color:var(--dim);animation:blink 1.2s infinite}
+.orb{border-radius:50%;background:radial-gradient(circle at 35% 30%,#fff,#8ff6ff 18%,#16b5d6 50%,#062a3a 75%);box-shadow:0 0 24px rgba(95,242,255,.6);animation:orb 2.4s ease-in-out infinite}
+@keyframes orb{50%{box-shadow:0 0 40px rgba(95,242,255,.9);transform:scale(1.05)}}
+
+/* ---------- 효과 ---------- */
+#flash{position:fixed;inset:0;background:#fff;opacity:0;pointer-events:none;z-index:40;transition:opacity .5s}
+#warptxt{position:fixed;inset:0;display:grid;place-items:center;z-index:20;pointer-events:none;text-align:center}
+#warptxt .a{font-family:'JetBrains Mono';font-size:15px;letter-spacing:.3em;color:#ffb3ba}
+#warptxt .b{font-family:'JetBrains Mono';font-weight:700;font-size:clamp(34px,6vw,70px);color:#fff;text-shadow:0 0 30px #5ff2ff, 3px 0 #ff3b6b, -3px 0 #3bd8ff}
+#alarm{position:fixed;inset:0;pointer-events:none;z-index:9;background:radial-gradient(ellipse at center,transparent 40%,rgba(255,20,40,.45));opacity:0}
+#alarm.on{animation:alarm .7s infinite}
+@keyframes alarm{50%{opacity:1}}
+
+/* ---------- 분석실 ---------- */
+.modal{position:fixed;inset:0;z-index:35;display:grid;place-items:center;background:rgba(1,6,10,.72);backdrop-filter:blur(6px)}
+#analysis .box{width:min(1240px,96vw);max-height:94vh;overflow:auto;padding:20px 22px}
+.mhead{display:flex;align-items:baseline;gap:14px;margin-bottom:12px;flex-wrap:wrap}
+.mhead h2{font-family:'Black Han Sans';font-weight:400;font-size:30px;margin:0}
+.mhead span{color:var(--cyan);font-family:'JetBrains Mono';font-size:13px}
+.an-grid{display:grid;grid-template-columns:1.35fr 1fr;gap:18px}
+@media (max-width:900px){.an-grid{grid-template-columns:1fr}}
+.ctl{display:flex;gap:10px;flex-wrap:wrap;align-items:center;font-size:13px;color:var(--dim);margin-bottom:10px}
+.ctl select{background:#0b2230;color:var(--text);border:1px solid var(--line);border-radius:8px;padding:6px 8px;font-family:inherit;font-size:13px}
+#an-plot{width:100%;height:auto;aspect-ratio:16/10.5;background:rgba(0,0,0,.25);border-radius:12px;border:1px solid rgba(255,255,255,.06);display:block}
+#an-stats{font-size:14px;margin:10px 0 6px;line-height:1.6}
+#an-stats b{color:var(--gold)}
+.slider{display:flex;align-items:center;gap:10px;font-size:13px;color:var(--dim);margin:8px 0}
+.slider input{flex:1;accent-color:var(--cyan)}
+.check{font-size:13px;color:var(--dim);display:flex;gap:8px;align-items:center}
+.card{padding:14px 16px;border-radius:12px;background:rgba(255,255,255,.035);border:1px solid rgba(255,255,255,.07);margin-bottom:14px}
+.card h3{margin:0 0 8px;font-size:15px;color:var(--cyan);letter-spacing:.04em}
+table.land{width:100%;border-collapse:collapse;font-size:12.5px}
+table.land th,table.land td{padding:6px 6px;border-bottom:1px solid rgba(255,255,255,.06);text-align:center}
+table.land th:first-child,table.land td:first-child{text-align:left;color:var(--dim)}
+table.land td.lock{color:#46606b}
+table.land th{color:var(--text);font-weight:700}
+.note{font-size:11.5px;color:var(--dim);margin-top:6px}
+.q{font-size:16px;font-weight:700;line-height:1.55;margin-bottom:10px}
+.opts{display:grid;gap:8px}
+.opt{text-align:left;background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.12);color:var(--text);border-radius:10px;padding:11px 14px;font-size:15px;transition:background .15s}
+.opt:hover{background:rgba(95,242,255,.12);border-color:var(--cyan)}
+.opt.right{background:rgba(93,255,168,.18);border-color:var(--good)}
+.opt.wrong{background:rgba(255,79,94,.16);border-color:var(--bad);animation:shake .3s}
+@keyframes shake{25%{transform:translateX(-5px)}75%{transform:translateX(5px)}}
+.fb{margin-top:10px;font-size:14px;line-height:1.6;padding:10px 12px;border-radius:10px}
+.fb.ok{background:rgba(93,255,168,.1);color:#d6ffe9}
+.fb.no{background:rgba(255,181,71,.1);color:#ffe7c2}
+.frag{display:flex;gap:10px;align-items:center;justify-content:center;font-family:'JetBrains Mono';font-size:28px;font-weight:700;margin:6px 0 2px}
+.frag span{padding:6px 12px;border-radius:8px;background:rgba(0,0,0,.35);border:1px solid var(--line);min-width:64px;text-align:center}
+.frag span.got{color:var(--gold);border-color:rgba(255,214,107,.6);box-shadow:0 0 18px rgba(255,214,107,.25)}
+.mfoot{display:flex;justify-content:flex-end;margin-top:14px}
+
+/* ---------- 엔딩 ---------- */
+#ending .box{width:min(1060px,94vw);max-height:94vh;overflow:auto;padding:26px 28px}
+.stats{display:grid;grid-template-columns:repeat(5,1fr);gap:10px;margin:14px 0 18px}
+.stats div{padding:12px;text-align:center;border-radius:12px;background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.07)}
+.stats b{display:block;font-family:'JetBrains Mono';font-size:24px;color:var(--gold)}
+.stats span{font-size:12px;color:var(--dim)}
+.cols{display:grid;grid-template-columns:1fr 1fr;gap:14px}
+@media (max-width:800px){.cols,.stats{grid-template-columns:1fr 1fr}}
+.cols p,.cols li{font-size:14px;line-height:1.7;color:#d5e9f0}
+.cols ul{margin:0;padding-left:18px}
+.tag{display:inline-block;font-size:11px;padding:2px 8px;border-radius:20px;margin-right:6px;font-weight:700}
+.tag.now{background:rgba(93,255,168,.15);color:var(--good)} .tag.next{background:rgba(255,214,107,.15);color:var(--gold)}
+.teaser{margin-top:16px;padding:18px;border-radius:14px;text-align:center;background:linear-gradient(135deg,rgba(255,60,100,.16),rgba(120,60,255,.16));border:1px solid rgba(255,120,160,.35)}
+.teaser .a{font-family:'JetBrains Mono';font-size:12px;letter-spacing:.3em;color:#ff9db5}
+.teaser .b{font-family:'Black Han Sans';font-size:30px;margin:6px 0}
+#credits .box{width:min(760px,92vw);max-height:90vh;overflow:auto;padding:22px 24px;font-size:13.5px;line-height:1.75}
+#credits a{color:var(--cyan)}
+
+/* ---------- v2: 상단 상태바 · 먹이사슬 표시 · AI ---------- */
+#log{top:330px}
+#status{position:absolute;top:14px;left:50%;transform:translateX(-50%);width:min(440px,40vw);padding:9px 14px}
+#status.low{border-color:#ff4f5e;animation:lowhp .8s infinite}
+@keyframes lowhp{50%{box-shadow:0 0 30px rgba(255,60,80,.6)}}
+.srow2{display:grid;grid-template-columns:40px 1fr auto;gap:8px;align-items:center;font-size:12.5px;margin:3px 0}
+.srow2 b{font-family:'JetBrains Mono';font-size:13px;min-width:70px;text-align:right}
+.srow2 b.stage{font-family:'Noto Sans KR';font-size:12px;color:var(--gold);min-width:150px;text-align:left}
+.srow2.thin .sbar{height:5px}
+.sbar{height:11px;background:rgba(255,255,255,.08);border-radius:8px;overflow:hidden}
+.sbar i{display:block;height:100%;width:0;border-radius:8px;transition:width .2s}
+.sbar.hp i{background:linear-gradient(90deg,#ff3b55,#ff8a6b)} .sbar.xp i{background:linear-gradient(90deg,#3bd47a,#b6ff7a)} .sbar.st i{background:linear-gradient(90deg,#ffd66b,#fff2b8)}
+#chips{top:104px;flex-wrap:wrap;justify-content:center;width:min(640px,60vw)}
+#radio{top:150px;width:min(500px,44vw)}
+.chip.ai{color:#e6d9ff;background:rgba(120,70,255,.45);border-color:#a98bff}
+.obj.ai .bar i{background:linear-gradient(90deg,#7a5cff,#c9a6ff)}
+.mapacc{font-size:11px;color:#c9a6ff;text-align:center;margin-top:5px}
+#mute{position:absolute;left:18px;bottom:18px;pointer-events:auto;font-size:12px;padding:7px 11px;border-radius:9px;border:1px solid var(--line);background:rgba(0,0,0,.45);color:var(--text)}
+#mk-ai{color:#5dff8a}
+.fx.big{font-size:30px}
+.threat{position:absolute;width:46px;height:46px;border-radius:50%;background:radial-gradient(circle,#ff3b55 40%,rgba(255,59,85,0));color:#fff;font-weight:900;font-size:26px;display:grid;place-items:center;animation:blink .5s infinite}
+.clabel{position:absolute;transform:translate(-50%,-100%);padding:3px 9px;border-radius:10px;font-size:12.5px;font-weight:700;white-space:nowrap;text-align:center;background:rgba(0,0,0,.55);border:1px solid rgba(255,255,255,.18);line-height:1.3}
+.clabel small{display:block;font-size:10.5px;font-weight:500}
+.clabel.eat{border-color:#5dff8a} .clabel.eat small{color:#5dff8a}
+.clabel.bad{border-color:#ff4f5e} .clabel.bad small{color:#ff8a95}
+.clabel.meh small{color:#cfdde3}
+#toast.red{color:#ffb3ba} #toast.gold{color:#ffe7a6}
+.credit-line{position:absolute;left:0;right:0;bottom:10px;text-align:center;font-size:10.5px;color:rgba(232,246,251,.42);padding:0 16px;line-height:1.5}
+/* 분석실 v2 */
+#an-steps{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:14px}
+#an-steps span{padding:6px 12px;border-radius:20px;font-size:13px;background:rgba(255,255,255,.05);color:var(--dim);border:1px solid rgba(255,255,255,.08)}
+#an-steps span.on{background:rgba(95,242,255,.15);color:#fff;border-color:var(--cyan)}
+#an-steps span.done{color:var(--good)}
+.lead{font-size:16px;line-height:1.6;margin-bottom:14px}
+.v3{display:grid;grid-template-columns:repeat(3,1fr);gap:12px}
+@media (max-width:800px){.v3{grid-template-columns:1fr}}
+.vcard{padding:16px;border-radius:14px;background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.08)}
+.vk{font-size:13px;color:var(--cyan);letter-spacing:.06em;font-weight:700;margin-bottom:6px}
+.vbig{font-size:40px;font-weight:700;color:var(--gold);line-height:1.1}
+.vbig2{font-size:24px;font-weight:700;color:#c9a6ff;margin-top:10px}
+.vbig small,.vbig2 small{font-size:14px;margin-left:3px}
+.vs{font-size:12.5px;color:var(--dim)}
+.vnote{margin-top:12px;font-size:13.5px;padding:8px 10px;border-radius:8px;background:rgba(255,214,107,.08)}
+.chips2{display:flex;flex-wrap:wrap;gap:6px}
+.chips2 span{font-size:12px;padding:4px 9px;border-radius:14px;background:rgba(95,242,255,.1);border:1px solid rgba(95,242,255,.25)}
+.chips2.sky span{background:rgba(201,166,255,.1);border-color:rgba(201,166,255,.3)}
+.aiuse{margin-top:14px;padding:12px 14px;border-radius:12px;background:rgba(120,70,255,.12);border:1px solid rgba(169,139,255,.35);font-size:14px}
+.ctitle{font-weight:700;font-size:15.5px;margin-bottom:8px}
+.guide{padding:12px 14px;border-radius:12px;background:rgba(95,242,255,.06);border:1px solid rgba(95,242,255,.2);font-size:13.5px;margin-bottom:12px}
+.guide ol{margin:6px 0 0;padding-left:20px;line-height:1.7}
+.maps{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.maps canvas{width:100%;display:block;border-radius:10px}
+.mlab{text-align:center;font-size:13px;font-weight:700;margin-top:5px}
+.legend2{display:flex;align-items:center;gap:8px;font-size:12px;color:var(--dim);margin:8px 0}
+.legend2 i{display:block;width:160px;height:8px;border-radius:5px;background:linear-gradient(90deg,rgb(30,40,120),rgb(25,150,190),rgb(60,220,150),rgb(240,230,80),rgb(255,120,60))}
+.legend3{display:flex;gap:14px;flex-wrap:wrap;font-size:12.5px;margin-top:6px}
+.dim{color:var(--dim)}
+#chartbox canvas,#tl{width:100%;display:block;margin-bottom:6px}
+.landfacts{font-size:13px;line-height:1.7;color:#d5e9f0;margin-bottom:10px}
+.fragwrap{text-align:center;padding:30px 0}
+.btn.small{padding:9px 16px;font-size:14px;margin-top:10px}
+.predbox{margin-top:8px;padding:10px 12px;border-radius:10px;background:rgba(95,242,255,.08);border:1px solid rgba(95,242,255,.25);font-size:14px;line-height:1.6}
+
+/* ---------- 패드(디벗) 터치 모드 ---------- */
+.only-touch{display:none}
+body.touch .only-touch{display:block}
+body.touch .only-mouse{display:none!important}
+/* 3D 화면 위 반투명 블러는 패드 GPU에 부담이 커서 끔 */
+body.touch .panel,body.touch .modal{backdrop-filter:none;-webkit-backdrop-filter:none}
+body.touch .panel{background:rgba(6,18,28,.84)}
+body.touch #log{display:none}
+body.touch #mission{width:250px;padding:11px 13px;left:max(12px,env(safe-area-inset-left));top:12px}
+body.touch #mission .era{font-size:19px}
+body.touch .obj{margin:6px 0}
+body.touch #sensors{width:220px;padding:10px 12px;right:max(12px,env(safe-area-inset-right));top:12px}
+body.touch .srow{padding:3px 0}
+body.touch .srow .v{font-size:14px}
+body.touch #mapbox{left:max(12px,env(safe-area-inset-left));right:auto;top:290px;bottom:auto;width:170px;padding:8px;pointer-events:auto}
+body.touch #minimap{width:154px;height:154px}
+body.touch #status{width:min(360px,36vw);top:10px}
+body.touch #chips{top:92px;width:min(460px,44vw)}
+body.touch #mute{left:auto;right:max(12px,env(safe-area-inset-right));bottom:auto;top:232px}
+body.touch #oldbars{left:50%;transform:translateX(-50%);bottom:max(12px,env(safe-area-inset-bottom));width:300px;padding:9px 12px}
+body.touch #toast{bottom:96px}
+body.touch #radio{top:128px;width:min(480px,46vw);font-size:13.5px}
+body.touch #dialog{bottom:20px}
+body.touch #an-plot{aspect-ratio:16/11}
+body.touch .opt{padding:13px 14px}
+body.touch .ctl select{padding:9px 10px;font-size:14px}
+body.touch .slider input{height:30px}
+body.touch .check{font-size:14px;padding:6px 0}
+body.touch .check input{width:24px;height:24px}
+body.touch #an-next{padding:16px 28px;font-size:19px}
+#touchui{position:fixed;inset:0;z-index:12;pointer-events:none}
+#joy{position:absolute;width:150px;height:150px;margin:-75px 0 0 -75px;border-radius:50%;border:2px solid rgba(95,242,255,.45);background:rgba(95,242,255,.08);opacity:.45;transition:opacity .15s}
+#joy.on{opacity:1}
+#joy i{position:absolute;left:50%;top:50%;width:62px;height:62px;margin:-31px 0 0 -31px;border-radius:50%;background:radial-gradient(circle at 40% 35%,#dffcff,#5ff2ff 45%,#1490b8);box-shadow:0 0 20px rgba(95,242,255,.6)}
+#joyhint{position:absolute;left:max(24px,env(safe-area-inset-left));bottom:max(14px,env(safe-area-inset-bottom));font-size:12.5px;color:rgba(232,246,251,.75);text-shadow:0 1px 4px #000}
+#lookhint{position:absolute;right:max(250px,24vw);bottom:max(40px,env(safe-area-inset-bottom));font-size:12.5px;color:rgba(232,246,251,.6);text-shadow:0 1px 4px #000;pointer-events:none}
+.tbtn{position:absolute;pointer-events:auto;border-radius:50%;border:2px solid rgba(255,255,255,.35);color:#fff;font-weight:900;font-family:inherit;display:grid;place-items:center;text-shadow:0 1px 3px rgba(0,0,0,.5);touch-action:none}
+.tbtn.on{transform:scale(.92);filter:brightness(1.3)}
+#tb-dash{right:max(28px,env(safe-area-inset-right));bottom:max(30px,env(safe-area-inset-bottom));width:112px;height:112px;font-size:19px;color:#3a2200;text-shadow:none;background:radial-gradient(circle at 40% 35%,rgba(255,236,170,.95),rgba(255,180,60,.85))}
+#tb-roll{right:calc(max(28px,env(safe-area-inset-right)) + 128px);bottom:max(24px,env(safe-area-inset-bottom));width:86px;height:86px;font-size:15px;background:radial-gradient(circle at 40% 35%,rgba(170,240,255,.9),rgba(31,150,190,.85))}
+#tb-teacher{position:absolute;top:12px;left:50%;transform:translateX(-50%);pointer-events:auto;font-size:12px;padding:6px 10px;border-radius:8px;border:1px solid var(--line);background:rgba(0,0,0,.5);color:var(--gold)}
+#rotate{position:fixed;inset:0;z-index:90;display:none;place-items:center;text-align:center;background:#02070b;font-size:20px;line-height:1.7}
+#rotate b{font-family:'Black Han Sans';font-weight:400;font-size:34px;display:block;margin-bottom:8px}
+@media (orientation:portrait){body.touch #rotate{display:grid}}
+/* ---------- 2차시 미래 편 ---------- */
+#screen{background:radial-gradient(ellipse at 50% 30%,rgba(255,60,90,.22),transparent 60%),radial-gradient(ellipse at 50% 120%,rgba(125,255,176,.12),transparent 50%),#0a0205}
+h1.title{background:linear-gradient(180deg,#fff,#ffc2cc 55%,#ff4f6e);-webkit-background-clip:text;background-clip:text;filter:drop-shadow(0 0 30px rgba(255,80,110,.35))}
+#mission .era{font-size:19px}
+.sbar.vt i{background:linear-gradient(90deg,#5dff8a,#c8ffd8)}
+#mk-cell{color:#c58bff} #mk-home{color:#5dff8a}
+#an-steps span.on{background:rgba(255,120,150,.15);border-color:#ff7b95}
+#barcode,#varcv,#riskcv,#candcv{width:100%;display:block;border-radius:10px;background:rgba(0,0,0,.25);margin-bottom:8px}
+.mycard{margin-top:10px;padding:12px 14px;border-radius:12px;background:rgba(255,214,107,.08);border:1px solid rgba(255,214,107,.35)}
+.geno{display:flex;justify-content:space-between;align-items:center;font-size:14px;margin:4px 0}
+.geno b{font-size:30px;color:var(--gold)}
+.votebox{max-width:860px;margin:0 auto}
+.votebox .opt{font-size:16px;padding:14px 16px}
+.funnel{padding:16px;border-radius:14px;background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.08);margin-bottom:12px}
+.fcount{text-align:center;margin-bottom:8px}
+.fcount span{font-size:46px;font-weight:700;color:var(--gold)} .fcount small{font-size:15px;color:var(--dim);margin-left:4px}
+.fbar{height:12px;background:rgba(255,255,255,.08);border-radius:8px;overflow:hidden}
+.fbar i{display:block;height:100%;width:100%;background:linear-gradient(90deg,#7a5cff,#ff7b95);transition:width .15s}
+.fstep{font-size:14px;padding:7px 0;border-top:1px solid rgba(255,255,255,.06)}
+.fstep span{color:var(--gold);margin-left:6px} .fstep small{display:block;color:var(--dim);font-size:12.5px}
+#chips{top:132px} #radio{top:176px} body.touch #chips{top:118px} body.touch #radio{top:160px}
+.endvote{margin-top:6px;padding:10px 12px;border-radius:10px;background:rgba(255,214,107,.08);border:1px solid rgba(255,214,107,.3);font-size:14px}
+</style>
+<script type="importmap">
+{"imports":{
+  "three":"./vendor/three/build/three.module.js",
+  "three/addons/":"./vendor/three/examples/jsm/"
+}}
+</script>
+</head>
+<body>
+<canvas id="c"></canvas>
+
+<div id="screen">
+  <div class="wrap">
+    <div class="kicker">BIG DATA · FUTURE · 서기 2187년</div>
+    <h1 class="title">바이러스 X</h1>
+    <div class="subtitle">크로노스 프로토콜 · <b>2차시 · 미래 편</b> — 유전체 분석과 신약 개발</div>
+    <div id="loading"><div id="loadbar"><i></i></div><div id="loadtxt">3D 모델 불러오는 중…</div></div>
+    <div id="startbox" class="hidden">
+      <div class="namerow">
+        <input id="pname" maxlength="10" placeholder="연구원 이름 (예: 김민준)">
+        <button class="btn" id="startbtn">미래로 출발</button>
+      </div>
+      <div class="controls">
+        <div class="panel only-touch"><b>왼쪽 조이스틱</b>이동 · 끝까지 밀고 있으면<br>자동 가속</div>
+        <div class="panel only-touch"><b>오른쪽 화면 끌기</b>시점 돌리기<br>(보는 쪽으로 걸어가요)</div>
+        <div class="panel only-touch"><b>돌진 · 위장막</b>노란 버튼: 돌진<br>파란 버튼: 백혈구 피하기</div>
+        <div class="panel only-touch"><b>자동 레이저</b>가까운 바이러스를<br>자동으로 조준해요</div>
+        <div class="panel only-mouse"><b>WASD · 방향키</b>이동<br>(보는 쪽 기준)</div>
+        <div class="panel only-mouse"><b>마우스 끌기</b>시점 돌리기<br>스페이스·Shift: 돌진</div>
+        <div class="panel only-mouse"><b>E 키</b>위장막<br>백혈구가 잘 못 알아봐요</div>
+        <div class="panel only-mouse"><b>자동 레이저</b>가까운 바이러스를<br>자동으로 조준해요</div>
+      </div>
+    </div>
+  </div>
+  <div class="credit-line">3D 모델: Sketchfab — FrenchBaguette (CLN-R), Teliri (Coronavirus), vikrama1998 (Monocyte), a_wilczek, vertexmonster · 음악: ElevenLabs</div>
+</div>
+
+<div id="hud" class="hidden">
+  <div id="mission" class="panel">
+    <div class="era" id="m-title">작전 1 · 유전체 수집</div>
+    <div class="ago">PATIENT “하나” · 서기 2187년</div>
+    <div class="obj" id="o-a"><div class="lab"><span id="l-a">감염 세포 유전체 샘플</span> <b id="v-a">0 / 5</b></div><div class="bar"><i></i></div></div>
+    <div class="obj" id="o-b"><div class="lab">바이러스 유전체 조각 <b id="v-b">0 / 40</b></div><div class="bar"><i></i></div></div>
+    <div class="obj"><div class="lab">모은 빅데이터 <b id="v-rows">0</b></div></div>
+    <div class="obj ai" id="o-acc"><div class="lab">AI 예측 정확도 <b id="v-acc">0%</b></div><div class="bar"><i></i></div></div>
+    <div class="obj hidden" id="o-home"><div class="lab"><b style="color:var(--good)">▶ 초록 주입 포트로 귀환!</b></div></div>
+  </div>
+  <div id="status" class="panel">
+    <div class="srow2"><span>환자</span><div class="sbar vt"><i id="vt-i"></i></div><b id="v-vt">62%</b></div>
+    <div class="srow2"><span>로봇</span><div class="sbar hp"><i id="hp-i"></i></div><b id="v-hp">100</b></div>
+    <div class="srow2"><span>단계</span><div class="sbar xp"><i id="xp-i"></i></div><b id="v-stage" class="stage">나노봇 Mk.1</b></div>
+    <div class="srow2 thin"><span>기력</span><div class="sbar st"><i id="st-i"></i></div></div>
+  </div>
+  <button id="mute">소리 켜짐</button>
+  <div id="sensors" class="panel">
+    <div class="sh"><span>몸속 센서 · 0.5초마다 기록</span></div>
+    <div class="srow"><span class="k">위치</span><span class="v" id="sv-reg" style="font-size:12.5px">-</span></div>
+    <div class="srow"><span class="k">혈류 속도</span><span class="v"><span id="sv-flow">0</span><small>cm/s</small></span></div>
+    <div class="srow"><span class="k">산소 포화도</span><span class="v"><span id="sv-o2">0</span><small>%</small></span></div>
+    <div class="srow" id="sr-temp"><span class="k">체온</span><span class="v"><span id="sv-temp">37.0</span><small>℃</small></span></div>
+    <div class="srow" id="sr-vir"><span class="k">바이러스 농도</span><span class="v"><span id="sv-vir">0</span><small>/mL</small></span></div>
+    <div class="srow"><span class="k">면역 반응</span><span class="v" id="sv-imm">-</span></div>
+  </div>
+  <div id="mapbox" class="panel">
+    <div id="maptitle"><span>AI 지도 · <b>바이러스 예측</b></span></div>
+    <canvas id="minimap" width="400" height="400"></canvas>
+    <div id="mapleg"><span>적음</span><div class="ramp" style="background:linear-gradient(90deg,#3ee06a,#ffd23f,#ff4b4b)"></div><span>많음</span></div>
+    <div id="map-acc" class="mapacc">데이터 부족</div>
+  </div>
+  <div id="chips"></div>
+  <div id="radio" class="panel"><div class="orb"></div><div class="who">ARIA · 무전</div><div id="radio-text" style="white-space:pre-line"></div></div>
+  <div id="toast" class="panel"></div>
+  <div id="vignette"></div>
+  <div id="banner"><div class="a" id="bn-a"></div><div class="b" id="bn-b"></div><div class="c" id="bn-c"></div></div>
+  <div class="marker hidden" id="mk-cell"><div class="dot"></div><span>감염 세포</span></div>
+  <div class="marker hidden" id="mk-home"><div class="dot"></div><span>주입 포트</span></div>
+  <div class="threat hidden">!</div><div class="threat hidden">!</div><div class="threat hidden">!</div>
+  <div class="clabel hidden"></div><div class="clabel hidden"></div><div class="clabel hidden"></div>
+</div>
+
+<div id="dialog" class="panel hidden">
+  <div class="orb"></div>
+  <div id="dlg-who">ARIA</div>
+  <div id="dlg-text"></div>
+  <div id="dlg-next"><span class="only-mouse">클릭 · 스페이스 ▶</span><span class="only-touch">화면을 탭 ▶</span></div>
+</div>
+
+<div id="warptxt" class="hidden"><div><div class="a" id="wp-a">TEMPORAL JUMP</div><div class="b" id="wp-b">+161 YEARS</div></div></div>
+<div id="flash"></div>
+
+<div id="analysis" class="modal hidden">
+  <div class="box panel">
+    <div class="mhead"><h2 id="an-title">유전체 분석실</h2><span id="an-era"></span></div>
+    <div id="an-steps"></div>
+    <div id="an-body"></div>
+    <div class="mfoot"><button class="btn hidden" id="an-next">다음 ▶</button></div>
+  </div>
+</div>
+
+<div id="ending" class="modal hidden">
+  <div class="box panel">
+    <div class="kicker">MISSION REPORT · 2187 → 2026</div>
+    <h2 style="font-family:'Black Han Sans';font-weight:400;font-size:36px;margin:6px 0 0">치료 성공 · 연구 보고서</h2>
+    <div class="stats" id="end-stats"></div>
+    <div class="cols">
+      <div class="card">
+        <h3>교과서 속 빅데이터 활용 4가지 · 모두 완료!</h3>
+        <ul>
+          <li><span class="tag now">1차시</span><b>과학 실험</b> · 부표 관측 데이터로 고생대 바다 분석</li>
+          <li><span class="tag now">1차시</span><b>기상 관측</b> · 대기 산소·CO₂ 데이터로 대멸종 예측</li>
+          <li><span class="tag now">오늘</span><b>유전체 분석</b> · 바이러스 유전체에서 변하지 않는 표적을 찾고, 사람 유전형으로 <b>중증 위험(질병 발생 가능성)을 예측</b></li>
+          <li><span class="tag now">오늘</span><b>신약 개발</b> · AI가 후보 물질 100만 개를 걸러 <b>치료제를 빠르게</b> 찾음</li>
+        </ul>
+      </div>
+      <div class="card">
+        <h3>왜 “빅”데이터여야 했을까?</h3>
+        <p>유전체 1개는 약 30,000개의 염기예요. 유전체가 몇 개뿐이면 어디가 변하지 않는 구역인지 알 수 없지만, <b>수백 개를 겹쳐 보자 보존 구역이 또렷하게</b> 드러났어요. 진료 기록도 수천 건이 쌓여야 유전형별 위험 차이를 믿을 수 있어요.</p>
+      </div>
+      <div class="card">
+        <h3>빅데이터의 문제점</h3>
+        <ul>
+          <li><b>사생활 침해 가능성</b> · 유전체는 질병 위험까지 드러내는 가장 민감한 개인 정보예요.
+            <div class="endvote">박사님의 선택: <b id="end-vote"></b></div></li>
+          <li><b>검증되지 않은 데이터</b> · 오염된 샘플이나 잘못 기록된 진료 기록은 분석을 틀리게 만들어요.</li>
+          <li><b>지나친 데이터 의존</b> · 데이터 센터가 멈추자 2187년의 AI는 아무것도 하지 못했어요.</li>
+        </ul>
+      </div>
+      <div class="card">
+        <h3>현실에서는?</h3>
+        <p>코로나19 때 전 세계 연구자들이 바이러스 유전체 수백만 개를 공유해 변이를 실시간으로 추적했고, 그 덕분에 백신을 1년 안에 만들 수 있었어요. AI는 단백질 구조 예측과 후보 물질 탐색에 쓰여 신약 개발 기간을 줄이고 있어요.</p>
+      </div>
+    </div>
+    <div class="note">게임 속 바이러스 X, 유전자 IFN-7, 치료제 XR-207과 모든 수치는 수업용 가상 시뮬레이션입니다.</div>
+    <div class="mfoot"><button class="btn" id="end-restart">처음부터 다시</button></div>
+  </div>
+</div>
+
+<div id="touchui" class="hidden">
+  <div id="joy"><i></i></div>
+  <div id="joyhint">왼쪽: 이동 (끝까지 밀면 자동 가속)</div>
+  <div id="lookhint">← 오른쪽 화면을 끌어서 시점 돌리기 →</div>
+  <button class="tbtn" id="tb-roll">위장막</button>
+  <button class="tbtn" id="tb-dash">돌진</button>
+  <button id="tb-teacher" class="hidden">교사용 · 미션 완료</button>
+</div>
+<div id="rotate"><div><b>패드를 가로로 돌려 주세요</b>이 게임은 가로 화면에서 플레이해요.</div></div>
+
+<script type="module" src="game.js"></script>
+</body>
+</html>
